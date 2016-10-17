@@ -1,5 +1,4 @@
 import binascii
-from collections import Counter, defaultdict
 from functools import partial
 from string import ascii_letters
 
@@ -27,35 +26,27 @@ def xor(msg, ltr):
     return binascii.unhexlify(msg_xord)
 
 
-def get_freq_rank():
-    """Generate a ranking system based on freq of each letter in English.
-
-    The more frequent a letter appears in the language, the higher its score.
-    """
-
-    freq_order = 'etaoinshrdlcumwfgypbvkjxqz'
-    freq_rank = defaultdict(int)
-    score = 26
-    for ltr in freq_order:
-        freq_rank[ltr] = score
-        score -= 1
-    return freq_rank
-
-
-def get_freq_score(freq_rank, phrase):
+def get_freq_score(phrase):
     """Return the frequency score of a phrase.
 
     Based on the freq ranking of each letter in the English language, score
     the phrase based on the letters it contains. A higher score means a
     closer resemblance to the natural frequencies.
     """
-    # Transform phrase into lowercase, count each letter's occurrence
-    counted = Counter(phrase.lower())
+    freq_rank = {
+        'a': .0651738, 'b': .0124248, 'c': .0217339, 'd': .0349835,
+        'e': .1041442, 'f': .0197881, 'g': .0158610, 'h': .0492888,
+        'i': .0558094, 'j': .0009033, 'k': .0050529, 'l': .0331490,
+        'm': .0202124, 'n': .0564513, 'o': .0596302, 'p': .0137645,
+        'q': .0008606, 'r': .0497563, 's': .0515760, 't': .0729357,
+        'u': .0225134, 'v': .0082903, 'w': .0171272, 'x': .0013692,
+        'y': .0145984, 'z': .0007836, ' ': .1918182,
+    }
+
     # Tally total score of phrase based on freq_rank
     total = 0
-    for ltr, score in counted.items():
-        # Letters in phrase is bytes, needs to be converted to alphabet
-        total += freq_rank[chr(ltr)]
+    for ltr in phrase.lower():
+        total += freq_rank.get(chr(ltr), 0)
     # Weight total score by length of phrase
     weighted_total = total / len(phrase)
     return weighted_total
@@ -69,16 +60,13 @@ def decipher(msg):
     the resultant decoded string to determine the correct letter.
     """
     xor_msg = partial(xor, msg=msg)
-    # Get the freq rank of the alphabet
-    freq_rank = get_freq_rank()
-
     # Remember the phrase with the highest freq score
     highest_score = 0
     best_phrase = ''
     # Iterate the alphabet, decode message against each letter
     for ltr in ascii_letters:
         decoded_str = xor_msg(ltr=ltr)
-        score = get_freq_score(freq_rank, decoded_str)
+        score = get_freq_score(decoded_str)
         if score >= highest_score:
             highest_score = score
             best_phrase = decoded_str
